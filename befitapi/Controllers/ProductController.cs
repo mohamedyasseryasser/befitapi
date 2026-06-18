@@ -114,7 +114,7 @@ namespace befitapi.Controllers
         }
 
         [HttpPost("createproduct")]
-        //  [Authorize(Roles = "Admin,Seller")]
+        [Authorize(Roles = "Admin,Seller")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProductDto>> CreateProduct([FromForm] CreateProductDto createProductDto)
         {
@@ -159,7 +159,7 @@ namespace befitapi.Controllers
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, productDto);
         }
         [HttpPut("updateproduct/{id}")]
-        // [Authorize(Roles = "Admin,Seller")]
+         [Authorize(Roles = "Admin,Seller")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UpdateProduct(int id, [FromForm] UpdateProductDto updateProductDto)
         {
@@ -225,7 +225,7 @@ namespace befitapi.Controllers
         }
 
         [HttpDelete("deleteproduct/{id}")]
-        //  [Authorize(Roles = "Admin,Seller")]
+          [Authorize(Roles = "Admin,Seller")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var product = await _productRepository.GetByIdAsync(id);
