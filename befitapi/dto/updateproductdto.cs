@@ -20,7 +20,8 @@ namespace befitapi.dto
         [Required]
         public int Stock { get; set; }
 
-        public string ImageUrl { get; set; }
+        public IFormFile? ImageFile { get; set; }
+        public bool RemoveImage { get; set; } = false;
 
         [Required]
         public int CategoryId { get; set; }

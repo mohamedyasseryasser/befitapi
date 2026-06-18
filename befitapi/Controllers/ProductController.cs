@@ -12,11 +12,13 @@ namespace befitapi.Controllers
     {
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IImageRepository _imageRepository;
 
-        public ProductController(IProductRepository productRepository, ICategoryRepository categoryRepository)
+        public ProductController(IProductRepository productRepository, ICategoryRepository categoryRepository, IImageRepository imageRepository)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
+            _imageRepository = imageRepository;
         }
 
         [HttpGet("getallproducts")]
@@ -112,8 +114,9 @@ namespace befitapi.Controllers
         }
 
         [HttpPost("createproduct")]
-      //  [Authorize(Roles = "Admin,Seller")]
-        public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] CreateProductDto createProductDto)
+        //  [Authorize(Roles = "Admin,Seller")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ProductDto>> CreateProduct([FromForm] CreateProductDto createProductDto)
         {
             if (!ModelState.IsValid)
             {
@@ -126,9 +129,17 @@ namespace befitapi.Controllers
                 Description = createProductDto.Description,
                 Price = createProductDto.Price,
                 Stock = createProductDto.Stock,
-                ImageUrl = createProductDto.ImageUrl,
                 CategoryId = createProductDto.CategoryId
             };
+
+            try
+            {
+                product.ImageUrl = await _imageRepository.UploadImageAsync(createProductDto.ImageFile, "product-images");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
 
             await _productRepository.AddAsync(product);
 
@@ -147,10 +158,10 @@ namespace befitapi.Controllers
 
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, productDto);
         }
-
         [HttpPut("updateproduct/{id}")]
-      //  [Authorize(Roles = "Admin,Seller")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductDto updateProductDto)
+        // [Authorize(Roles = "Admin,Seller")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] UpdateProductDto updateProductDto)
         {
             if (id != updateProductDto.Id)
             {
@@ -163,6 +174,7 @@ namespace befitapi.Controllers
             }
 
             var product = await _productRepository.GetByIdAsync(id);
+
             if (product == null)
             {
                 return NotFound();
@@ -172,8 +184,40 @@ namespace befitapi.Controllers
             product.Description = updateProductDto.Description;
             product.Price = updateProductDto.Price;
             product.Stock = updateProductDto.Stock;
-            product.ImageUrl = updateProductDto.ImageUrl;
             product.CategoryId = updateProductDto.CategoryId;
+
+            try
+            {
+                // إذا تم رفع صورة جديدة يتم استبدال القديمة بها
+                if (updateProductDto.ImageFile != null)
+                {
+                    if (!string.IsNullOrEmpty(product.ImageUrl))
+                    {
+                        _imageRepository.DeleteImage(product.ImageUrl);
+                    }
+
+                    product.ImageUrl = await _imageRepository.UploadImageAsync(
+                        updateProductDto.ImageFile,
+                        "product-images");
+                }
+                // حذف الصورة فقط (إذا كان ImageUrl يسمح بـ null في قاعدة البيانات)
+                else if (updateProductDto.RemoveImage)
+                {
+                    if (!string.IsNullOrEmpty(product.ImageUrl))
+                    {
+                        _imageRepository.DeleteImage(product.ImageUrl);
+                    }
+
+                    return BadRequest(new
+                    {
+                        message = "لا يمكن حذف الصورة بدون رفع صورة بديلة لأن ImageUrl لا يقبل NULL."
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
 
             await _productRepository.UpdateAsync(product);
 
@@ -181,7 +225,7 @@ namespace befitapi.Controllers
         }
 
         [HttpDelete("deleteproduct/{id}")]
-      //  [Authorize(Roles = "Admin,Seller")]
+        //  [Authorize(Roles = "Admin,Seller")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var product = await _productRepository.GetByIdAsync(id);
@@ -190,6 +234,10 @@ namespace befitapi.Controllers
                 return NotFound();
             }
 
+            if (!string.IsNullOrEmpty(product.ImageUrl))
+            {
+                _imageRepository.DeleteImage(product.ImageUrl);
+            }
             await _productRepository.DeleteAsync(id);
 
             return NoContent();

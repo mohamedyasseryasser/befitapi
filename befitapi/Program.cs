@@ -114,6 +114,8 @@ RoleClaimType = ClaimTypes.Role
             builder.Services.AddScoped<ICartRepository, CartRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+            builder.Services.AddScoped<IImageRepository,ImageRepository>();
+            builder.Services.AddHttpContextAccessor();
 
             var app = builder.Build();
 
@@ -126,6 +128,7 @@ RoleClaimType = ClaimTypes.Role
             app.UseCors("employee"); // 👈 ضيف السطر ده هنا بالظبط
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseStaticFiles();
 
             app.MapControllers();
 
