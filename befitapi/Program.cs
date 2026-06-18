@@ -120,11 +120,11 @@ RoleClaimType = ClaimTypes.Role
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
+           // if (app.Environment.IsDevelopment())
+            //{
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
+            //}
             app.UseCors("employee"); // 👈 ضيف السطر ده هنا بالظبط
             app.UseAuthentication();
             app.UseAuthorization();
